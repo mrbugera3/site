@@ -2,155 +2,174 @@
 <html lang="ka">
 <head>
 <meta charset="UTF-8">
-<title>ნიკოლოზ ჟამუტაშვილი</title>
-
+<title>Mini Galaga</title>
 <style>
 body{
-    margin:0;
-    font-family: Arial, Helvetica, sans-serif;
-    background:#fff;
-    color:#222;
-    line-height:1.7;
+  margin:0;
+  background:black;
+  color:white;
+  font-family:Arial;
+  text-align:center;
 }
-
-.container{
-    max-width:1000px;
-    margin:auto;
-    padding:30px 20px;
+canvas{
+  display:block;
+  margin:auto;
+  background:black;
 }
-
-.header{
-    border-bottom:1px solid #ddd;
-    margin-bottom:25px;
-    padding-bottom:10px;
+#ui{
+  position:fixed;
+  top:10px;
+  left:10px;
+  font-size:18px;
 }
-
-.header h1{
-    margin:0;
-    font-size:26px;
+#gameover{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  display:none;
 }
-
-.bio{
-    display:flex;
-    gap:30px;
-}
-
-.photo{
-    width:240px;
-    flex-shrink:0;
-}
-
-.photo img{
-    width:100%;
-    border:1px solid #ccc;
-}
-
-.content{
-    flex:1;
-}
-
-.meta{
-    color:#555;
-    margin-bottom:20px;
-}
-
-h2{
-    font-size:18px;
-    margin-top:25px;
-}
-
-footer{
-    margin-top:60px;
-    font-size:13px;
-    color:#777;
-    border-top:1px solid #eee;
-    padding-top:15px;
-}
-
-@media(max-width:700px){
-.bio{
-    flex-direction:column;
-}
-.photo{
-    width:100%;
-    max-width:300px;
-}
+button{
+  padding:10px 20px;
+  font-size:16px;
 }
 </style>
 </head>
-
 <body>
 
-<div class="container">
+<div id="ui">Score: <span id="score">0</span></div>
 
-<div class="header">
-<h1>ნიკოლოზ ჟამუტაშვილი</h1>
+<div id="gameover">
+  <h1>Game Over</h1>
+  <button onclick="restart()">Restart</button>
 </div>
 
-<div class="bio">
+<canvas id="c" width="400" height="600"></canvas>
 
-<div class="content">
+<script>
+const c = document.getElementById("c");
+const ctx = c.getContext("2d");
+const scoreEl = document.getElementById("score");
+const gameoverEl = document.getElementById("gameover");
 
-<div class="meta">
-დაბადების თარიღი: 10 იანვარი 1925 წელი — ქ. ყვარელი<br>
-გარდაცვალების თარიღი: 8 აპრილი 2008 წელი — ქ. ყვარელი<br>
-რეჟისორი, მსახიობი<br>
-საქართველოს სსრ სახალხო არტისტი (1968)
-</div>
+let player, bullets, enemies, score, gameOver, keys;
 
-<p>
-ნიკოლოზ (ნიკო) ჟამუტაშვილი დაიბადა 1925 წლის 10 იანვარს ქ. ყვარელში. ჰყავდა მეუღლე თინა ღონიაშვილი და ორი შვილი — მერი და მერაბ ჟამუტაშვილი.
-</p>
+function init(){
+  player = {x:180, y:540, w:40, h:20};
+  bullets = [];
+  enemies = [];
+  score = 0;
+  gameOver = false;
+  keys = {};
+  scoreEl.textContent = score;
+  gameoverEl.style.display = "none";
 
-<p>
-თეატრალური ცხოვრება სცენის სიყვარულით დაიწყო. მიუხედავად იმისა, რომ სპეციალური უმაღლესი თეატრალური განათლება არ მიუღია, შეძლო მრავალი სახასიათო როლის შესრულება. გამოირჩეოდა მაღალი არტისტიზმით, ხმის ტემბრითა და გარეგნობით.
-</p>
+  spawnEnemies();
+}
 
-<p>
-1942 წლიდან ირიცხებოდა ყვარლის სახელმწიფო თეატრის დასში, სადაც მუშაობდა ისეთ მსახიობებთან ერთად, როგორებიც იყვნენ გიორგი ბაღაღოშვილი, მიხეილ სულთანიშვილი, გერონტი ტუღუში, ვაჟა ნოდია და სხვები. სწორედ ამ თეატრალურმა გარემომ ჩამოაყალიბა იგი ნამდვილ მსახიობად.
-</p>
+function spawnEnemies(){
+  enemies = [];
+  for(let r=0; r<3; r++){
+    for(let i=0; i<8; i++){
+      enemies.push({x:40+i*40, y:40+r*40, w:30, h:20, dx:1});
+    }
+  }
+}
 
-<p>
-1944 წელს რეჟისორ შალვა ჩერქეზიშვილის მიწვევით შეასრულა გერმანელი პოლკოვნიკის როლი სპექტაკლში „ლეიტენანტი გამიდოვი“. 1947 წელს მონაწილეობდა „ხევისბერი გოჩას“ დადგმაში, სადაც მათიას როლი შეასრულა და დიდი მოწონება დაიმსახურა.
-</p>
+document.addEventListener("keydown",e=>keys[e.key]=true);
+document.addEventListener("keyup",e=>keys[e.key]=false);
 
-<p>
-1949 წელს ყვარლის სახელმწიფო თეატრი დაიხურა, თუმცა დრამატულმა დასმა მუშაობა არ შეწყვიტა. ხელმძღვანელობა ნიკო ჟამუტაშვილმა იტვირთა — იყო რეჟისორიც, სამხატვრო ხელმძღვანელიც და წამყვანი მსახიობიც. ამ პერიოდში სახალხო თეატრმა მრავალი წარმატებული დადგმა განახორციელა.
-</p>
+// mouse control
+document.addEventListener("mousemove",e=>{
+  const rect = c.getBoundingClientRect();
+  player.x = e.clientX - rect.left - player.w/2;
+});
 
-<p>
-1960-იანი წლებიდან კოტე მარჯანიშვილის სახელობის ყვარლის სახალხო თეატრში შექმნა არაერთი გამორჩეული სახე: „მკაცრი ქალიშვილები“, „მე ჩემს გზას მოვნახავ“, „ალუბლის ყვავილი“ და სხვა სპექტაკლები. გოდერძის როლის შესრულებისთვის დაჯილდოვდა პირველი ხარისხის დიპლომით.
-</p>
+// touch control
+c.addEventListener("touchmove", e=>{
+  e.preventDefault();
+  const rect = c.getBoundingClientRect();
+  const t = e.touches[0];
+  player.x = t.clientX - rect.left - player.w/2;
+},{passive:false});
 
-<p>
-ნიკო ჟამუტაშვილი არასოდეს კმაყოფილდებოდა მიღწეულით — მუდმივად სრულყოფდა ოსტატობას. მისთვის არ არსებობდა დიდი და პატარა როლები — ყველა ეპიზოდს ერთნაირი პასუხისმგებლობით ეკიდებოდა.
-</p>
+setInterval(()=>{
+  if(!gameOver){
+    bullets.push({x:player.x+18, y:player.y});
+  }
+},400);
 
-<p>
-დაჯილდოებულია მრავალი სიგელითა და დიპლომით, მათ შორის მედლით „შრომითი მამაცობისათვის“. 1971 წლის 19 ნოემბერს გაიმართა მისი სასცენო მოღვაწეობის 30 წლისთავისადმი მიძღვნილი შემოქმედებითი საღამო.
-</p>
+function loop(){
+  ctx.clearRect(0,0,400,600);
 
-<p>
-1988–1989 წლებში მონაწილეობდა ყვარლის კულტურის სახლთან არსებულ ვაჟთა გუნდ „ყვარელში“. სიცოცხლის ბოლომდე აქტიურად ემსახურებოდა ქართულ ხელოვნებას.
-</p>
+  if(gameOver) return;
 
-<p>
-ყვარელი არასოდეს დაივიწყებს მის დიდ ამაგს ყვარლის თეატრალურ ცხოვრებაში.
-</p>
+  // player movement
+  if(keys["ArrowLeft"]) player.x -= 4;
+  if(keys["ArrowRight"]) player.x += 4;
+  player.x = Math.max(0, Math.min(360, player.x));
 
-</div>
+  // draw player
+  ctx.fillStyle = "lime";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
 
-<div class="photo">
-<img src="cover.png" alt="ნიკოლოზ ჟამუტაშვილი">
-</div>
+  // bullets
+  bullets.forEach(b=>b.y -= 6);
+  bullets = bullets.filter(b=>b.y > -10);
+  ctx.fillStyle = "white";
+  bullets.forEach(b=>ctx.fillRect(b.x, b.y, 4, 10));
 
-</div>
+  // enemies movement
+  let edge = false;
+  enemies.forEach(e=>{
+    e.x += e.dx;
+    if(e.x < 0 || e.x > 370) edge = true;
+    if(e.y + e.h > player.y){
+      gameOver = true;
+      gameoverEl.style.display = "block";
+    }
+  });
 
-<footer>
-© 2026 zhamutashvili.ge
-</footer>
+  if(edge){
+    enemies.forEach(e=>{
+      e.dx *= -1;
+      e.y += 10;
+    });
+  }
 
-</div>
+  // draw enemies
+  ctx.fillStyle = "red";
+  enemies.forEach(e=>ctx.fillRect(e.x, e.y, e.w, e.h));
+
+  // collisions
+  bullets.forEach(b=>{
+    enemies.forEach(e=>{
+      if(b.x<e.x+e.w && b.x+4>e.x &&
+         b.y<e.y+e.h && b.y+10>e.y){
+        e.dead = true;
+        b.dead = true;
+        score += 10;
+        scoreEl.textContent = score;
+      }
+    });
+  });
+
+  bullets = bullets.filter(b=>!b.dead);
+  enemies = enemies.filter(e=>!e.dead);
+
+  if(enemies.length === 0) spawnEnemies();
+
+  requestAnimationFrame(loop);
+}
+
+function restart(){
+  init();
+  loop();
+}
+
+init();
+loop();
+</script>
 
 </body>
 </html>
