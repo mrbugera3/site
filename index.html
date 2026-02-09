@@ -66,12 +66,13 @@ function resize(){
 window.addEventListener("resize", resize);
 resize();
 
-let player, bullets, bubbles, score, gameOver, level;
+let player, rope, bubbles, score, gameOver, level;
 let targetX = 0;
+let lastShot = 0;
 
 function init(){
-  player = {x:w/2, y:h-60, w:30, h:20};
-  bullets = [];
+  player = {x:w/2, y:h-100, w:30, h:20}; // აწეული მოთამაშე
+  rope = null;
   score = 0;
   level = 1;
   gameOver = false;
@@ -84,8 +85,8 @@ function init(){
 
 function spawnLevel(){
   bubbles = [];
-  const speed = 1 + level * 0.4;
-  const size = 40 + level * 2;
+  const speed = 1 + level * 0.3;
+  const size = 40;
 
   bubbles.push({
     x:w/2,
@@ -109,16 +110,21 @@ c.addEventListener("touchmove", e=>{
   movePlayer(e.touches[0].clientX);
 },{passive:false});
 
-// auto shooting
-setInterval(()=>{
-  if(!gameOver){
-    bullets.push({x:player.x, y:player.y});
+// shoot rope
+function shoot(){
+  const now = Date.now();
+  if(!rope && now - lastShot > 900 && !gameOver){
+    rope = {x:player.x, y:player.y};
+    lastShot = now;
   }
-},450);
+}
+
+document.addEventListener("click",shoot);
+c.addEventListener("touchstart",shoot);
 
 function splitBubble(b){
   if(b.r > 18){
-    const speed = 1 + level * 0.4;
+    const speed = 1 + level * 0.3;
     bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:-speed, dy:-3});
     bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:speed, dy:-3});
   }
@@ -136,11 +142,18 @@ function loop(){
   ctx.fillStyle="lime";
   ctx.fillRect(player.x-15,player.y,30,20);
 
-  // bullets
-  bullets.forEach(b=>b.y-=7);
-  bullets = bullets.filter(b=>b.y>0);
-  ctx.fillStyle="white";
-  bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,12));
+  // rope
+  if(rope){
+    rope.y -= 10;
+    ctx.strokeStyle="white";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(rope.x,player.y);
+    ctx.lineTo(rope.x,rope.y);
+    ctx.stroke();
+
+    if(rope.y < 0) rope = null;
+  }
 
   // bubbles
   ctx.fillStyle="red";
@@ -162,24 +175,21 @@ function loop(){
     if(Math.sqrt(dx*dx+dy*dy)<b.r){
       endGame();
     }
-  });
 
-  // bullet collisions
-  bullets.forEach(b=>{
-    bubbles.forEach(bu=>{
-      const dx=b.x-bu.x;
-      const dy=b.y-bu.y;
-      if(Math.sqrt(dx*dx+dy*dy)<bu.r){
-        bu.dead=true;
+    // rope collision
+    if(rope){
+      const dx2=rope.x-b.x;
+      const dy2=rope.y-b.y;
+      if(Math.sqrt(dx2*dx2+dy2*dy2)<b.r){
         b.dead=true;
+        rope=null;
         score+=10;
         scoreEl.textContent=score;
-        splitBubble(bu);
+        splitBubble(b);
       }
-    });
+    }
   });
 
-  bullets=bullets.filter(b=>!b.dead);
   bubbles=bubbles.filter(b=>!b.dead);
 
   // next level
