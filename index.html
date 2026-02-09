@@ -39,7 +39,10 @@ button{
 </head>
 <body>
 
-<div id="ui">Score: <span id="score">0</span></div>
+<div id="ui">
+Score: <span id="score">0</span><br>
+Level: <span id="level">1</span>
+</div>
 
 <div id="gameover">
 <h1>Game Over</h1>
@@ -52,6 +55,7 @@ button{
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
 const scoreEl = document.getElementById("score");
+const levelEl = document.getElementById("level");
 const gameoverEl = document.getElementById("gameover");
 
 let w, h;
@@ -62,22 +66,38 @@ function resize(){
 window.addEventListener("resize", resize);
 resize();
 
-let player, bullets, bubbles, score, gameOver;
+let player, bullets, bubbles, score, gameOver, level;
+let targetX = 0;
 
 function init(){
-  player = {x:w/2, y:h-50, w:30, h:20};
+  player = {x:w/2, y:h-60, w:30, h:20};
   bullets = [];
-  bubbles = [{x:w/2, y:100, r:40, dx:3, dy:2}];
   score = 0;
+  level = 1;
   gameOver = false;
   scoreEl.textContent = score;
+  levelEl.textContent = level;
   gameoverEl.style.display = "none";
+
+  spawnLevel();
 }
 
-// touch & mouse control
+function spawnLevel(){
+  bubbles = [];
+  const speed = 1 + level * 0.4;
+  const size = 40 + level * 2;
+
+  bubbles.push({
+    x:w/2,
+    y:100,
+    r:size,
+    dx:speed,
+    dy:2
+  });
+}
+
 function movePlayer(x){
-  player.x = x;
-  player.x = Math.max(20, Math.min(w-20, player.x));
+  targetX = x;
 }
 
 document.addEventListener("mousemove",e=>{
@@ -94,12 +114,13 @@ setInterval(()=>{
   if(!gameOver){
     bullets.push({x:player.x, y:player.y});
   }
-},400);
+},450);
 
 function splitBubble(b){
-  if(b.r > 15){
-    bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:-3, dy:-3});
-    bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:3, dy:-3});
+  if(b.r > 18){
+    const speed = 1 + level * 0.4;
+    bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:-speed, dy:-3});
+    bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:speed, dy:-3});
   }
 }
 
@@ -107,12 +128,16 @@ function loop(){
   ctx.clearRect(0,0,w,h);
   if(gameOver) return;
 
-  // player
+  // smooth movement
+  player.x += (targetX - player.x) * 0.2;
+  player.x = Math.max(20, Math.min(w-20, player.x));
+
+  // draw player
   ctx.fillStyle="lime";
   ctx.fillRect(player.x-15,player.y,30,20);
 
   // bullets
-  bullets.forEach(b=>b.y-=8);
+  bullets.forEach(b=>b.y-=7);
   bullets = bullets.filter(b=>b.y>0);
   ctx.fillStyle="white";
   bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,12));
@@ -122,7 +147,7 @@ function loop(){
   bubbles.forEach(b=>{
     b.x+=b.dx;
     b.y+=b.dy;
-    b.dy+=0.2;
+    b.dy+=0.15;
 
     if(b.x-b.r<0||b.x+b.r>w) b.dx*=-1;
     if(b.y+b.r>h) b.dy=-Math.abs(b.dy);
@@ -157,8 +182,11 @@ function loop(){
   bullets=bullets.filter(b=>!b.dead);
   bubbles=bubbles.filter(b=>!b.dead);
 
+  // next level
   if(bubbles.length===0){
-    bubbles.push({x:w/2,y:80,r:50,dx:3,dy:2});
+    level++;
+    levelEl.textContent=level;
+    spawnLevel();
   }
 
   requestAnimationFrame(loop);
