@@ -59,7 +59,7 @@ const levelEl = document.getElementById("level");
 const gameoverEl = document.getElementById("gameover");
 
 let w, h;
-let sensorZone = 120; // ქვედა სენსორის ზონა
+let sensorZone = 130;
 
 function resize(){
   w = c.width = window.innerWidth;
@@ -73,7 +73,7 @@ let targetX = 0;
 let lastShot = 0;
 
 function init(){
-  player = {x:w/2, y:h-sensorZone-40, w:30, h:20}; // მოთამაშე ზემოთ
+  player = {x:w/2, y:h-sensorZone-60, w:26, h:40};
   bullets = [];
   score = 0;
   level = 1;
@@ -87,7 +87,7 @@ function init(){
 
 function spawnLevel(){
   bubbles = [];
-  const speed = 1 + level * 0.3;
+  const speed = 1 + level * 0.25;
   const size = 40;
 
   bubbles.push({
@@ -112,11 +112,11 @@ c.addEventListener("touchmove", e=>{
   movePlayer(e.touches[0].clientX);
 },{passive:false});
 
-// bullet shooting
+// shooting
 function shoot(){
   const now = Date.now();
-  if(now - lastShot > 700 && !gameOver){
-    bullets.push({x:player.x, y:player.y});
+  if(now - lastShot > 280 && !gameOver){
+    bullets.push({x:player.x, y:player.y-20});
     lastShot = now;
   }
 }
@@ -126,34 +126,53 @@ c.addEventListener("touchstart",shoot);
 
 function splitBubble(b){
   if(b.r > 18){
-    const speed = 1 + level * 0.3;
+    const speed = 1 + level * 0.25;
     bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:-speed, dy:-3});
     bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:speed, dy:-3});
   }
+}
+
+function drawPlayer(){
+  const x = player.x;
+  const y = player.y;
+
+  // legs
+  ctx.fillStyle = "#2ecc71";
+  ctx.fillRect(x-10, y+25, 8, 15);
+  ctx.fillRect(x+2, y+25, 8, 15);
+
+  // body
+  ctx.fillStyle = "#e74c3c";
+  ctx.fillRect(x-12, y+5, 24, 22);
+
+  // head
+  ctx.fillStyle = "#f1c40f";
+  ctx.beginPath();
+  ctx.arc(x, y, 10, 0, Math.PI*2);
+  ctx.fill();
 }
 
 function loop(){
   ctx.clearRect(0,0,w,h);
   if(gameOver) return;
 
-  // draw play area
+  // play area
   ctx.fillStyle = "#444";
   ctx.fillRect(0,0,w,h-sensorZone);
 
-  // draw sensor zone
+  // sensor zone
   ctx.fillStyle = "#111";
   ctx.fillRect(0,h-sensorZone,w,sensorZone);
 
-  // smooth movement
+  // movement
   player.x += (targetX - player.x) * 0.2;
   player.x = Math.max(20, Math.min(w-20, player.x));
 
   // draw player
-  ctx.fillStyle="lime";
-  ctx.fillRect(player.x-15,player.y,30,20);
+  drawPlayer();
 
   // bullets
-  bullets.forEach(b=>b.y-=8);
+  bullets.forEach(b=>b.y-=9);
   bullets = bullets.filter(b=>b.y>0);
   ctx.fillStyle="white";
   bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,12));
@@ -167,7 +186,6 @@ function loop(){
 
     if(b.x-b.r<0||b.x+b.r>w) b.dx*=-1;
 
-    // ქვედა საზღვარი = სენსორის ზონის ზემოთ
     const floor = h - sensorZone;
     if(b.y+b.r > floor){
       b.y = floor - b.r;
@@ -204,7 +222,6 @@ function loop(){
   bullets=bullets.filter(b=>!b.dead);
   bubbles=bubbles.filter(b=>!b.dead);
 
-  // next level
   if(bubbles.length===0){
     level++;
     levelEl.textContent=level;
