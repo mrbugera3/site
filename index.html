@@ -40,7 +40,7 @@ button{
 <body>
 
 <div id="ui">
-ქულა: <span id="score">0</span><br>
+Score: <span id="score">0</span><br>
 Level: <span id="level">1</span>
 </div>
 
@@ -59,6 +59,8 @@ const levelEl = document.getElementById("level");
 const gameoverEl = document.getElementById("gameover");
 
 let w, h;
+let sensorZone = 120; // ქვედა სენსორის ზონა
+
 function resize(){
   w = c.width = window.innerWidth;
   h = c.height = window.innerHeight;
@@ -71,7 +73,7 @@ let targetX = 0;
 let lastShot = 0;
 
 function init(){
-  player = {x:w/2, y:h-100, w:30, h:20}; // მოთამაშე წინ
+  player = {x:w/2, y:h-sensorZone-40, w:30, h:20}; // მოთამაშე ზემოთ
   bullets = [];
   score = 0;
   level = 1;
@@ -134,6 +136,14 @@ function loop(){
   ctx.clearRect(0,0,w,h);
   if(gameOver) return;
 
+  // draw play area
+  ctx.fillStyle = "#444";
+  ctx.fillRect(0,0,w,h-sensorZone);
+
+  // draw sensor zone
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0,h-sensorZone,w,sensorZone);
+
   // smooth movement
   player.x += (targetX - player.x) * 0.2;
   player.x = Math.max(20, Math.min(w-20, player.x));
@@ -157,8 +167,8 @@ function loop(){
 
     if(b.x-b.r<0||b.x+b.r>w) b.dx*=-1;
 
-    // ქვედა საზღვარი = მოთამაშის ზემოთ
-    const floor = player.y - 10;
+    // ქვედა საზღვარი = სენსორის ზონის ზემოთ
+    const floor = h - sensorZone;
     if(b.y+b.r > floor){
       b.y = floor - b.r;
       b.dy = -Math.abs(b.dy);
