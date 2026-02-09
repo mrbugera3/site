@@ -2,30 +2,26 @@
 <html lang="ka">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Mini Galaga</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bubble Game</title>
 
 <style>
 body{
   margin:0;
-  background:black;
+  background:#111;
   overflow:hidden;
   font-family:Arial;
 }
-
 canvas{
   display:block;
 }
-
 #ui{
   position:fixed;
   top:10px;
   left:10px;
   color:white;
   font-size:18px;
-  z-index:10;
 }
-
 #gameover{
   position:fixed;
   top:50%;
@@ -35,9 +31,8 @@ canvas{
   text-align:center;
   display:none;
 }
-
 button{
-  padding:12px 25px;
+  padding:10px 20px;
   font-size:18px;
 }
 </style>
@@ -45,8 +40,7 @@ button{
 <body>
 
 <div id="ui">
-Score: <span id="score">0</span><br>
-High Score: <span id="highscore">0</span>
+Score: <span id="score">0</span>
 </div>
 
 <div id="gameover">
@@ -59,9 +53,10 @@ High Score: <span id="highscore">0</span>
 <script>
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
+const scoreEl = document.getElementById("score");
+const gameoverEl = document.getElementById("gameover");
 
 let w, h;
-
 function resize(){
   w = c.width = window.innerWidth;
   h = c.height = window.innerHeight;
@@ -69,128 +64,123 @@ function resize(){
 window.addEventListener("resize", resize);
 resize();
 
-const scoreEl = document.getElementById("score");
-const highScoreEl = document.getElementById("highscore");
-const gameoverEl = document.getElementById("gameover");
-
-let player, bullets, enemies, score, gameOver, highScore;
-
-// load high score
-highScore = localStorage.getItem("highscore") || 0;
-highScoreEl.textContent = highScore;
+let player, bullets, bubbles, score, gameOver;
+let moveLeft=false, moveRight=false;
 
 function init(){
-  player = {x:w/2-20, y:h-60, w:40, h:20};
+  player = {x:w/2, y:h-40, w:30, h:20};
   bullets = [];
-  enemies = [];
+  bubbles = [
+    {x:w/2, y:100, r:40, dx:3, dy:2}
+  ];
   score = 0;
   gameOver = false;
   scoreEl.textContent = score;
   gameoverEl.style.display = "none";
-
-  spawnEnemies();
 }
 
-function spawnEnemies(){
-  enemies = [];
-  for(let r=0; r<3; r++){
-    for(let i=0; i<6; i++){
-      enemies.push({
-        x:50+i*60,
-        y:60+r*50,
-        w:40,
-        h:25,
-        dx:1
-      });
-    }
-  }
-}
-
-// touch + mouse
-function movePlayer(x){
-  player.x = x - player.w/2;
-  player.x = Math.max(0, Math.min(w-player.w, player.x));
-}
-
-document.addEventListener("mousemove",e=>{
-  movePlayer(e.clientX);
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft") moveLeft=true;
+  if(e.key==="ArrowRight") moveRight=true;
+  if(e.key===" ") shoot();
+});
+document.addEventListener("keyup",e=>{
+  if(e.key==="ArrowLeft") moveLeft=false;
+  if(e.key==="ArrowRight") moveRight=false;
 });
 
-c.addEventListener("touchmove", e=>{
-  e.preventDefault();
-  movePlayer(e.touches[0].clientX);
-},{passive:false});
+c.addEventListener("touchstart",e=>{
+  const x=e.touches[0].clientX;
+  if(x<w/2) moveLeft=true;
+  else moveRight=true;
+});
+c.addEventListener("touchend",()=>{
+  moveLeft=false;
+  moveRight=false;
+});
 
-setInterval(()=>{
+function shoot(){
   if(!gameOver){
-    bullets.push({x:player.x+18, y:player.y});
+    bullets.push({x:player.x, y:player.y});
   }
-},350);
+}
 
-function endGame(){
-  gameOver = true;
-
-  if(score > highScore){
-    highScore = score;
-    localStorage.setItem("highscore", highScore);
-    highScoreEl.textContent = highScore;
+function splitBubble(b){
+  if(b.r > 15){
+    bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:-3, dy:-3});
+    bubbles.push({x:b.x, y:b.y, r:b.r/2, dx:3, dy:-3});
   }
-
-  gameoverEl.style.display = "block";
 }
 
 function loop(){
   ctx.clearRect(0,0,w,h);
-
   if(gameOver) return;
 
-  // player
+  // player movement
+  if(moveLeft) player.x-=6;
+  if(moveRight) player.x+=6;
+  player.x=Math.max(20,Math.min(w-20,player.x));
+
+  // draw player
   ctx.fillStyle="lime";
-  ctx.fillRect(player.x,player.y,player.w,player.h);
+  ctx.fillRect(player.x-15,player.y,30,20);
 
   // bullets
   bullets.forEach(b=>b.y-=8);
-  bullets = bullets.filter(b=>b.y>-10);
+  bullets = bullets.filter(b=>b.y>0);
   ctx.fillStyle="white";
-  bullets.forEach(b=>ctx.fillRect(b.x,b.y,4,12));
+  bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,12));
 
-  // enemies
-  let edge=false;
-  enemies.forEach(e=>{
-    e.x+=e.dx*2;
-    if(e.x<0||e.x+e.w>w) edge=true;
-    if(e.y+e.h>player.y) endGame();
-  });
-
-  if(edge){
-    enemies.forEach(e=>{
-      e.dx*=-1;
-      e.y+=20;
-    });
-  }
-
+  // bubbles
   ctx.fillStyle="red";
-  enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
+  bubbles.forEach(b=>{
+    b.x+=b.dx;
+    b.y+=b.dy;
+    b.dy+=0.2;
+
+    if(b.x-b.r<0||b.x+b.r>w) b.dx*=-1;
+    if(b.y+b.r>h) b.dy=-Math.abs(b.dy);
+
+    ctx.beginPath();
+    ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.fill();
+
+    // collision with player
+    const dx=player.x-b.x;
+    const dy=player.y-b.y;
+    if(Math.sqrt(dx*dx+dy*dy)<b.r){
+      endGame();
+    }
+  });
 
   // collisions
   bullets.forEach(b=>{
-    enemies.forEach(e=>{
-      if(b.x<e.x+e.w && b.x+4>e.x &&
-         b.y<e.y+e.h && b.y+12>e.y){
-        e.dead=true;
+    bubbles.forEach(bu=>{
+      const dx=b.x-bu.x;
+      const dy=b.y-bu.y;
+      if(Math.sqrt(dx*dx+dy*dy)<bu.r){
+        bu.dead=true;
         b.dead=true;
         score+=10;
         scoreEl.textContent=score;
+        splitBubble(bu);
       }
     });
   });
 
-  bullets = bullets.filter(b=>!b.dead);
-  enemies = enemies.filter(e=>!e.dead);
+  bullets=bullets.filter(b=>!b.dead);
+  bubbles=bubbles.filter(b=>!b.dead);
 
-  if(enemies.length===0) spawnEnemies();
+  if(bubbles.length===0){
+    bubbles.push({x:w/2,y:80,r:50,dx:3,dy:2});
+  }
 
   requestAnimationFrame(loop);
+}
+
+function endGame(){
+  gameOver=true;
+  gameoverEl.style.display="block";
 }
 
 function restart(){
